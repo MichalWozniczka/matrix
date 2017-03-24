@@ -15,9 +15,11 @@ void matrix_read(ifstream &ifile, string &op, vector<matrix> &matrices) {
 	string line;
 	getline(ifile, op);
 	int elem;
+
+	getline(ifile, line);
 	while(getline(ifile, line)) {
 		vector<vector<double>> mat;
-		while(getline(ifile, line) && line.find_first_not_of(' ') != string::npos) {
+		while(line.find_first_not_of(' ') != string::npos) {
 			vector<double> row;
 			stringstream s;
 			s << line;
@@ -25,6 +27,9 @@ void matrix_read(ifstream &ifile, string &op, vector<matrix> &matrices) {
 				row.push_back(elem);
 			}
 			mat.push_back(row);
+			if(!getline(ifile, line)) {
+				break;
+			}
 		}
 		matrix mat_obj = matrix(mat);
 		matrices.push_back(mat_obj);
@@ -51,7 +56,7 @@ bool is_letter(string s) {
 }
 
 void matrix_eval(string &op, vector<matrix> &matrices) {
-	list<string> bin_functs = {};
+	list<string> bin_functs = {"*"};
 	list<string> un_functs = {"ref", "rref"};
 	list<string> expr;
 
@@ -65,26 +70,38 @@ void matrix_eval(string &op, vector<matrix> &matrices) {
 	while(expr.begin() != prev(expr.end())) {
 		string oper, arg1, arg2;
 		if(find(bin_functs.begin(), bin_functs.end(), *i) != bin_functs.end()) {
+			oper = *i;
+			i--;
+			expr.erase(next(i));
+			arg2 = *i;
+			i--;
+			expr.erase(next(i));
+			arg1 = *i;
+
+			if(oper == "*" && is_letter(arg1) && is_letter(arg2)) {
+				matrix temp = mat_mult(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
 		}
 		else if(find(un_functs.begin(), un_functs.end(), *i) != un_functs.end()) {
-			string oper = *i;
-			string arg1 = *(prev(i));
+			oper = *i;
+			i--;
+			expr.erase(next(i));
+			arg1 = *i;
 
 			if(oper == "ref" && is_letter(arg1)) {
-				i--;
-				expr.erase(next(i));
 				matrix temp = matrices.at(arg1.c_str()[0]-65);
 				temp.ref();
-				string new_arg(1, matrices.size()+1);
+				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
 				matrices.push_back(temp);
 			}
 			else if(oper == "rref" && is_letter(arg1)) {
-				i--;
-				expr.erase(next(i));
 				matrix temp = matrices.at(arg1.c_str()[0]-65);
 				temp.rref();
-				string new_arg(1, matrices.size()+1);
+				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
 				matrices.push_back(temp);
 			}

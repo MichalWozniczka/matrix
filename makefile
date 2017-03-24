@@ -2,7 +2,7 @@ appname := Matrix
 CXX := g++
 CXXFLAGS := -std=c++11
 
-srcfiles := $(shell find . -name "*.c++")
+srcfiles := $(shell find . -name "*.c++" -or -name "*.h")
 objects := $(patsubst %.c++, %.o, $(srcfiles))
 
 all: $(appname)

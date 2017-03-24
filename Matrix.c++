@@ -48,16 +48,16 @@ int get_op_num(string op_string, string op_arr[]) {
 }
 
 bool is_num(string s) {
-	return s.find_first_not_of("0123456789") == string::npos;
+	return s.find_first_not_of("-.0123456789") == string::npos;
 }
 
 bool is_letter(string s) {
 	return !is_num(s) && s.length() == 1;
 }
 
-void matrix_eval(string &op, vector<matrix> &matrices) {
-	list<string> bin_functs = {"*"};
-	list<string> un_functs = {"ref", "rref"};
+string matrix_eval(string &op, vector<matrix> &matrices) {
+	list<string> bin_functs = {"*", "+", "-"};
+	list<string> un_functs = {"ref", "rref", "det"};
 	list<string> expr;
 
 	istringstream s(op);
@@ -84,6 +84,18 @@ void matrix_eval(string &op, vector<matrix> &matrices) {
 				*i = new_arg;
 				matrices.push_back(temp);
 			}
+			if(oper == "+" && is_letter(arg1) && is_letter(arg2)) {
+				matrix temp = mat_add(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
+			if(oper == "-" && is_letter(arg1) && is_letter(arg2)) {
+				matrix temp = mat_sub(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
 		}
 		else if(find(un_functs.begin(), un_functs.end(), *i) != un_functs.end()) {
 			oper = *i;
@@ -105,26 +117,35 @@ void matrix_eval(string &op, vector<matrix> &matrices) {
 				*i = new_arg;
 				matrices.push_back(temp);
 			}
+			else if(oper == "det" && is_letter(arg1)) {
+				ostringstream s;
+				s << matrices.at(arg1.c_str()[0]-65).det();
+				string new_arg = s.str();
+				*i = new_arg;
+			}
 		}
 		i++;
 	}
 	
-	return;
+	return *expr.begin();
 }
 
-void matrix_print(ofstream &o, vector<matrix> matrices) {
-	for(int i = 0; i < matrices.size(); i++) {
-		matrices.at(i).print(o);
-		o << "\n";
+void matrix_print(ofstream &o, vector<matrix> matrices, string ans) {
+	if(is_num(ans)) {
+		o << ans;
+	} 
+	else if(is_letter(ans)) {
+		matrices.at(ans.c_str()[0]-65).print(o);
 	}
 }
 
 void matrix_solve(ifstream &i, ofstream &o) {
 	vector<matrix> matrices;
 	string op;
+	string ans;
 	matrix_read(i, op, matrices);
-	matrix_eval(op, matrices);
-	matrix_print(o, matrices);
+	ans = matrix_eval(op, matrices);
+	matrix_print(o, matrices, ans);
 }
 
 int main() {

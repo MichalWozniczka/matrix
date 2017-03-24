@@ -14,7 +14,7 @@ int get_op_num(string op_string, string op_arr[]);
 
 void matrix_eval(int &op, vector<vector<vector<double>>> &matrices);
 
-void matrix_print(ofstream &o, vector<vector<vector<double>>> matrices);
+void matrix_print(ofstream &o, vector<vector<vector<double>>> matrices, string ans);
 
 void matrix_solve(ifstream &i, ofstream &o);
 
@@ -31,6 +31,30 @@ class matrix {
 						a += m1.mat.at(i).at(k) * m2.mat.at(k).at(j);
 					}
 					m3.mat.at(i).at(j) = a;
+				}
+			}
+			return m3;
+		}
+
+		friend matrix mat_add(matrix m1, matrix m2) {
+			vector<vector<double>> m(m1.m, vector<double>(m1.n, 0));
+			matrix m3 = matrix(m);
+
+			for(int i = 0; i < m3.m; i++) {
+				for(int j = 0; j < m3.n; j++) {
+					m3.mat.at(i).at(j) = m1.mat.at(i).at(j) + m2.mat.at(i).at(j);
+				}
+			}
+			return m3;
+		}
+
+		friend matrix mat_sub(matrix m1, matrix m2) {
+			vector<vector<double>> m(m1.m, vector<double>(m1.n, 0));
+			matrix m3 = matrix(m);
+
+			for(int i = 0; i < m3.m; i++) {
+				for(int j = 0; j < m3.n; j++) {
+					m3.mat.at(i).at(j) = m1.mat.at(i).at(j) - m2.mat.at(i).at(j);
 				}
 			}
 			return m3;
@@ -125,7 +149,19 @@ class matrix {
 			}
 		}
 
-		
+		double det() {
+			matrix temp = *this;
+			temp.ref();
+
+			double det = 1;
+			for(int i = 0; i < m; i++) {
+				det *= temp.mat.at(i).at(i);
+			}
+			if(temp.swapped) {
+				det = -det;
+			}
+			return det;
+		}		
 
 		void print(ofstream& o) {
 			for(int i = 0; i < m; i++) {

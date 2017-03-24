@@ -1,0 +1,79 @@
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
+
+#include "Matrix.h"
+
+using namespace std;
+
+void matrix_read(ifstream &ifile, int &op, vector<matrix> &matrices) {
+	string op_string, line;
+	int mat_cnt;
+	ifile >> mat_cnt;
+	getline(ifile, op_string);
+	getline(ifile, op_string);
+	string op_arr[] = {"rref"};
+	op = get_op_num(op_string, op_arr);
+
+	int elem;
+	for(int i = 0; i < mat_cnt; i++) {
+		getline(ifile, line);
+		vector<vector<double>> mat;
+		while(getline(ifile, line) && line.find_first_not_of(' ') != string::npos) {
+			vector<double> row;
+			stringstream s;
+			s << line;
+			while(s >> elem) {
+				row.push_back(elem);
+			}
+			mat.push_back(row);
+		}
+		matrix mat_obj = matrix(mat);
+		matrices.push_back(mat_obj);
+	}
+}
+
+int get_op_num(string op_string, string op_arr[]) {
+	int size = sizeof(op_arr)/sizeof(op_arr[0]);
+
+	for(int i = 0; i < size; i++) {
+		if(op_string == op_arr[i]) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void matrix_eval(int &op, vector<matrix> &matrices) {
+	if(op == 0) {
+		matrices.at(0).rref();
+	}
+	return;
+}
+
+void matrix_print(ofstream &o, vector<matrix> matrices) {
+	for(int i = 0; i < matrices.size(); i++) {
+		matrices.at(i).print(o);
+		o << "\n";
+	}
+}
+
+void matrix_solve(ifstream &i, ofstream &o) {
+	vector<matrix> matrices;
+	int op;
+	matrix_read(i, op, matrices);
+	matrix_eval(op, matrices);
+	matrix_print(o, matrices);
+}
+
+int main() {
+	ifstream ifile;
+	ofstream ofile;
+	ifile.open("input.txt");
+	ofile.open("output.txt");
+	matrix_solve(ifile, ofile);
+	ifile.close();
+	ofile.close();
+}

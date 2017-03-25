@@ -56,8 +56,8 @@ bool is_letter(string s) {
 }
 
 string matrix_eval(string &op, vector<matrix> &matrices) {
-	list<string> bin_functs = {"*", "+", "-"};
-	list<string> un_functs = {"ref", "rref", "det"};
+	list<string> bin_functs = {"*", "+", "-", "^"};
+	list<string> un_functs = {"u", "l", "ref", "rref", "det"};
 	list<string> expr;
 
 	istringstream s(op);
@@ -96,6 +96,20 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 				*i = new_arg;
 				matrices.push_back(temp);
 			}
+			if(oper == "^" && is_letter(arg1) && arg2 == "t") {
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp.transpose();
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
+			if(oper == "^" && is_letter(arg1) && arg2 == "-1") {
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp.inverse();
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
 		}
 		else if(find(un_functs.begin(), un_functs.end(), *i) != un_functs.end()) {
 			oper = *i;
@@ -103,7 +117,21 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 			expr.erase(next(i));
 			arg1 = *i;
 
-			if(oper == "ref" && is_letter(arg1)) {
+			if(oper == "u" && is_letter(arg1)) {
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp.u();
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
+			else if(oper == "l" && is_letter(arg1)) {
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp.l();
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
+			else if(oper == "ref" && is_letter(arg1)) {
 				matrix temp = matrices.at(arg1.c_str()[0]-65);
 				temp.ref();
 				string new_arg(1, matrices.size()+65);

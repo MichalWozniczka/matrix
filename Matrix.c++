@@ -14,7 +14,7 @@ using namespace std;
 void matrix_read(ifstream &ifile, string &op, vector<matrix> &matrices) {
 	string line;
 	getline(ifile, op);
-	int elem;
+	double elem;
 
 	getline(ifile, line);
 	while(getline(ifile, line)) {
@@ -56,8 +56,8 @@ bool is_letter(string s) {
 }
 
 string matrix_eval(string &op, vector<matrix> &matrices) {
-	list<string> bin_functs = {"*", "+", "-", "^", "cocm"};
-	list<string> un_functs = {"u", "l", "ref", "rref", "det"};
+	list<string> bin_functs = {"*", "+", "-", "^", "<-"};
+	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval"};
 	list<string> expr;
 
 	istringstream s(op);
@@ -110,7 +110,7 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 				*i = new_arg;
 				matrices.push_back(temp);
 			}
-			if(oper == "cocm" && is_letter(arg1) && is_letter(arg2)) {
+			if(oper == "<-" && is_letter(arg1) && is_letter(arg2)) {
 				matrix temp = change_of_coords(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
 				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
@@ -156,6 +156,14 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 				s << matrices.at(arg1.c_str()[0]-65).det();
 				string new_arg = s.str();
 				*i = new_arg;
+			}
+			else if(oper == "eval" && is_letter(arg1)) {
+				ostringstream s;
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				matrix ret = temp.find_evals(100);
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(ret);
 			}
 		}
 		i++;

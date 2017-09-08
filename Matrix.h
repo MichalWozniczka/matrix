@@ -1,10 +1,13 @@
 
+#include <limits>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cassert>
 #include <sstream>
 #include <stdexcept>
+#include <cmath>
 
 using namespace std;
 
@@ -75,8 +78,8 @@ class matrix {
 			return m3;
 		}
 
-		//returns change of coordinates matrix from m1 to m2
-		friend matrix change_of_coords(matrix m1, matrix m2) {
+		//returns change of coordinates matrix from m1 to m2; P(m2 <- m1)
+		friend matrix change_of_coords(matrix m2, matrix m1) {
 			matrix m3(m1.m, m1.n+m2.n);
 			for(int i = 0; i < m1.m; i++) {
 				for(int j = 0; j < m1.n+m2.n; j++) {
@@ -149,6 +152,16 @@ class matrix {
 			}
 
 			swapped = false;
+		}
+
+		//creates square identity matrix with given dimension
+		matrix(int s) {
+			mat = vector<vector<double>> (s, vector<double> (s, 0));
+			m = s;
+			n = s;
+			for(int i = 0; i < m; i++) {
+				mat.at(i).at(i) = 1;
+			}
 		}
 
 		//swaps rows r1 and r2
@@ -345,25 +358,111 @@ class matrix {
 			*this = temp;
 		}
 
+		//computes largest eigenvalue using power method
+		double pow_meth(int iters) {
+			matrix x(this->n, 1);
+			x.mat.at(0).at(0) = 1;
+			double mu = 1;
+
+			for(int i = 0; i < iters; i++) {
+				x = mat_mult(*this, x);
+				x.mat_scale(1/mu);
+				mu = 0;
+				for(int i = 0; i < x.m; i++) {
+					if(abs(x.mat.at(i).at(0)) > abs(mu)) {
+						mu = x.mat.at(i).at(0);
+					}
+				}
+			}
+
+			return mu;
+
+		}
+
+		double inv_pow_meth(int iters, double alpha) {
+			matrix x(this->n, 1);
+			x.mat.at(0).at(0) = 1;
+			matrix y = x;
+			double mu = 1;
+			double last = mu;
+
+			for(int i = 0; i < iters; i++) {
+				cout << "    " << 1/mu << " " << alpha << "\n";
+				last = mu;
+				y.mat_scale(1/mu);
+				x = y;
+				matrix id(this->m);
+				id.mat_scale(alpha);
+				matrix temp = mat_sub(*this, id);
+				temp.inverse();
+				y = mat_mult(temp, x);
+				y.print(cout);
+				mu = 0;
+				for(int i = 0; i < y.m; i++) {
+					if(abs(y.mat.at(i).at(0)) > abs(mu)) {
+						mu = y.mat.at(i).at(0);
+					}
+				}
+			}
+
+			if(1/last - 1/mu > 0.0001 || mu == 0) {
+				return numeric_limits<double>::infinity();
+			}
+			return 1/mu + alpha;
+		}
+
+		matrix find_evals(int iters) {
+			double max = pow_meth(iters);
+			max = round(max * pow(10, 3)) / pow(10, 3);
+			double min = inv_pow_meth(iters, 0);
+			min = round(min * pow(10, 3)) / pow(10, 3);
+
+			vector<double> evals = {min};
+
+			for(double i = min; i <= max+1; i += 1) {
+				double eval = inv_pow_meth(iters, i);
+				eval = round(eval * pow(10, 3)) / pow(10, 3);
+				if(eval < numeric_limits<double>::infinity() && find(evals.begin(), evals.end(), eval) == evals.end()) {
+					evals.push_back(eval);
+				}
+			}
+
+			for(double i = -max-1; i <= -min+1; i += 1) {
+				double eval = inv_pow_meth(iters, i);
+				eval = round(eval * pow(10, 3)) / pow(10, 3);
+				if(eval < numeric_limits<double>::infinity() && find(evals.begin(), evals.end(), eval) == evals.end()) {
+					evals.push_back(eval);
+				}
+			}
+
+			vector<vector<double>> ret;
+			for(int i = 0; i < evals.size(); i++) {
+				ret.push_back({evals.at(i)});
+			}
+			return matrix(ret);
+		}
+
+
 		//rounds every value in *this to p decimal places
-		void round(int p) {
+		void mat_round(int p) {
 			for(int i = 0; i < m; i++) {
 				for(int j = 0; j < n; j++) {
-					stringstream ss;
+/*					stringstream ss;
 					ss << fixed;
 					ss.precision(p);
 					ss << mat.at(i).at(j);
 					ss >> mat.at(i).at(j);
 					if(mat.at(i).at(j) == 0) {
 						mat.at(i).at(j) = 0;
-					}
+					}*/
+					mat.at(i).at(j) = round(mat.at(i).at(j) * pow(10, p)) / pow(10, p);
 				}
 			}
 		}
 
 		//outputs *this into o
-		void print(ofstream& o) {
-			round(3);
+		void print(ostream& o) {
+			//round(3);
 
 			for(int i = 0; i < m; i++) {
 				for(int j = 0; j < n; j++) {

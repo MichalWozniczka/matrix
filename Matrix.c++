@@ -56,8 +56,8 @@ bool is_letter(string s) {
 }
 
 string matrix_eval(string &op, vector<matrix> &matrices) {
-	list<string> bin_functs = {"*", "+", "-", "^", "<-"};
-	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval"};
+	list<string> bin_functs = {"*", "+", "-", "^", "<-", "."};
+	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval", "gram", "q"};
 	list<string> expr;
 
 	istringstream s(op);
@@ -116,6 +116,12 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 				*i = new_arg;
 				matrices.push_back(temp);
 			}
+			if(oper == "." && is_letter(arg1) && is_letter(arg2)) {
+				matrix temp = dot_prod(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(temp);
+			}
 		}
 		else if(find(un_functs.begin(), un_functs.end(), *i) != un_functs.end()) {
 			oper = *i;
@@ -161,6 +167,22 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 				ostringstream s;
 				matrix temp = matrices.at(arg1.c_str()[0]-65);
 				matrix ret = temp.find_evals(100);
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(ret);
+			}
+			else if(oper == "gram" && is_letter(arg1)) {
+				ostringstream s;
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				matrix ret = temp.gram_schmidt();
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(ret);
+			}
+			else if(oper == "q" && is_letter(arg1)) {
+				ostringstream s;
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				matrix ret = temp.Q();
 				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
 				matrices.push_back(ret);

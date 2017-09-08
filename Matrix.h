@@ -44,6 +44,12 @@ class matrix {
 			return m3;
 		}
 
+		friend double dot_prod(matrix m1, matrix m2) {
+			matrix temp = m1;
+			temp.transpose();
+			return mat_mult(temp, m2).mat.at(0).at(0);
+		}
+
 		//returns sum of two matrices
 		friend matrix mat_add(matrix m1, matrix m2) {
 			if(m1.m != m2.m || m1.n != m2.n) {
@@ -358,6 +364,48 @@ class matrix {
 			*this = temp;
 		}
 
+		matrix get_vec(int vecnum) {
+			matrix vec(this->m, 1);
+			for(int i = 0; i < this->m; i++) {
+				vec.mat.at(i).at(0) = mat.at(i).at(vecnum);
+			}
+			return vec;
+		}
+
+		matrix gram_schmidt() {
+			matrix ret(this->m, this->n);
+			matrix x;
+
+			for(int i = 0; i < this->n; i++) {
+				x = get_vec(i);
+				for(int j = 0; j < i; j++) {
+					matrix v = ret.get_vec(j);
+					v.mat_scale(dot_prod(x, v) / dot_prod(v, v));
+					x = mat_sub(x, v);
+				}
+				for(int j = 0; j < this->m; j++) {
+					ret.mat.at(j).at(i) = x.mat.at(j).at(0);
+				}
+			}
+			return ret;
+		}
+
+		matrix Q() {
+			matrix orthog = gram_schmidt();
+			double scale;
+
+			for(int i = 0; i < orthog.n; i++) {
+				scale = 0;
+				for(int j = 0; j < orthog.m; j++) {
+					scale += pow(orthog.mat.at(j).at(i), 2);
+				}
+				for(int j = 0; j < orthog.m; j++) {
+					orthog.mat.at(j).at(i) = orthog.mat.at(j).at(i) / sqrt(scale);
+				}
+			}
+			return orthog;
+		}
+
 		//computes largest eigenvalue using power method
 		double pow_meth(int iters) {
 			matrix x(this->n, 1);
@@ -412,34 +460,7 @@ class matrix {
 		}
 
 		matrix find_evals(int iters) {
-			double max = pow_meth(iters);
-			max = round(max * pow(10, 3)) / pow(10, 3);
-			double min = inv_pow_meth(iters, 0);
-			min = round(min * pow(10, 3)) / pow(10, 3);
-
-			vector<double> evals = {min};
-
-			for(double i = min; i <= max+1; i += 1) {
-				double eval = inv_pow_meth(iters, i);
-				eval = round(eval * pow(10, 3)) / pow(10, 3);
-				if(eval < numeric_limits<double>::infinity() && find(evals.begin(), evals.end(), eval) == evals.end()) {
-					evals.push_back(eval);
-				}
-			}
-
-			for(double i = -max-1; i <= -min+1; i += 1) {
-				double eval = inv_pow_meth(iters, i);
-				eval = round(eval * pow(10, 3)) / pow(10, 3);
-				if(eval < numeric_limits<double>::infinity() && find(evals.begin(), evals.end(), eval) == evals.end()) {
-					evals.push_back(eval);
-				}
-			}
-
-			vector<vector<double>> ret;
-			for(int i = 0; i < evals.size(); i++) {
-				ret.push_back({evals.at(i)});
-			}
-			return matrix(ret);
+			
 		}
 
 
@@ -462,7 +483,7 @@ class matrix {
 
 		//outputs *this into o
 		void print(ostream& o) {
-			//round(3);
+			mat_round(3);
 
 			for(int i = 0; i < m; i++) {
 				for(int j = 0; j < n; j++) {

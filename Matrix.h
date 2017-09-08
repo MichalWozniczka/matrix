@@ -76,23 +76,23 @@ class matrix {
 		}
 
 		//returns change of coordinates matrix from m1 to m2
-		/*friend matrix change_of_coords(matrix m1, matrix m2) {
+		friend matrix change_of_coords(matrix m1, matrix m2) {
 			matrix m3(m1.m, m1.n+m2.n);
-			for(int i = 0; i < m1.n+m2.n; i++) {
-				for(int j = 0; j < m1.m; j++) {
-					m3.mat.at(i).at(j) == (i < m1.n ? m1.mat.at(i).at(j) : m2.mat.at(i - m1.n).at(j));
+			for(int i = 0; i < m1.m; i++) {
+				for(int j = 0; j < m1.n+m2.n; j++) {
+					m3.mat.at(i).at(j) = (j < m2.n ? m2.mat.at(i).at(j) : m1.mat.at(i).at(j - m1.n));
 				}
 			}
 			m3.rref();
 
-			matrix m4(m1.m, m2.n);
+			matrix m4(m1.n, m1.n);
 			for(int i = 0; i < m1.n; i++) {
-				for(int j = 0; j < m1.m; i++) {
-					m4.mat.at(i).at(j) == m3.mat.at(i + m1.n).at(j);
+				for(int j = 0; j < m1.n; j++) {
+					m4.mat.at(i).at(j) = m3.mat.at(i).at(j + m1.n);
 				}
 			}
 			return m4;
-		}*/
+		}
 
 		
 	private:

@@ -406,6 +406,12 @@ class matrix {
 			return orthog;
 		}
 
+		matrix R() {
+			matrix q = Q();
+			q.transpose();
+			return mat_mult(q, *this);
+		}
+
 		//computes largest eigenvalue using power method
 		double pow_meth(int iters) {
 			matrix x(this->n, 1);
@@ -460,7 +466,13 @@ class matrix {
 		}
 
 		matrix find_evals(int iters) {
-			
+			matrix q, r;
+			for(int i = 0; i < iters; i++) {
+				q = Q();
+				r = R();
+				*this = mat_mult(r, q);
+			}
+			return *this;
 		}
 
 

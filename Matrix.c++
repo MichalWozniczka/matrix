@@ -57,7 +57,7 @@ bool is_letter(string s) {
 
 string matrix_eval(string &op, vector<matrix> &matrices) {
 	list<string> bin_functs = {"*", "+", "-", "^", "<-", "."};
-	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval", "gram", "q"};
+	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval", "gram", "q", "r"};
 	list<string> expr;
 
 	istringstream s(op);
@@ -183,6 +183,14 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 				ostringstream s;
 				matrix temp = matrices.at(arg1.c_str()[0]-65);
 				matrix ret = temp.Q();
+				string new_arg(1, matrices.size()+65);
+				*i = new_arg;
+				matrices.push_back(ret);
+			}
+			else if(oper == "r" && is_letter(arg1)) {
+				ostringstream s;
+				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				matrix ret = temp.R();
 				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
 				matrices.push_back(ret);

@@ -21,6 +21,8 @@ Your equations and matrices go into the file input.txt in the following format:
 > 8 10 12  
 > 14 16 18  
 
+The output to your equation is written to output.txt.
+
 Your equation should be written in postfix, and you should refer to your matrices with single-character uppercase letters, starting with 'A' and continuing alphabetically based on the order you wrote them in the input file.
 
 Example:

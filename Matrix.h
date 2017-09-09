@@ -180,6 +180,24 @@ class matrix {
 			for(int i = 0; i < m; i++) {
 				mat.at(i).at(i) = 1;
 			}
+			l_mat = mat;
+		}
+
+		//creates a matrix by appending a bunch of vectors (of the matrix variety) together
+		matrix(vector<matrix> &vecs) {
+			mat = vector<vector<double>> (vecs.at(0).mat.size(), vector<double> (vecs.size(), 0));
+			m = mat.size();
+			n = mat.at(0).size();
+			for(int i = 0; i < m; i++) {
+				for(int j = 0; j < n; j++) {
+					mat.at(i).at(j) = vecs.at(j).mat.at(i).at(0);
+				}
+			}
+			if(m == n) {
+				l_mat = matrix(m).mat;
+			} else {
+				l_mat = {};
+			}
 		}
 
 		//swaps rows r1 and r2
@@ -327,6 +345,7 @@ class matrix {
 			}
 		}
 	
+
 		//returns determinant of *this
 		double det() {
 			matrix temp = *this;
@@ -385,6 +404,7 @@ class matrix {
 			return vec;
 		}
 
+		//returns magnitude of vector
 		double vec_mag() {
 			if(n != 1) {
 				throw invalid_argument("Vector Magnitude: not a vector");
@@ -392,7 +412,62 @@ class matrix {
 			return sqrt(dot_prod(*this, *this));
 		}
 
-			
+		//converts *this into basis for space that spans *this
+		void basis() {
+			matrix temp = *this;
+			temp.rref();
+			vector<matrix> vecs = {};
+
+			for(int i = 0; i < m; i++) {
+				for(int j = 0; j < n; j++) {
+					if(temp.mat.at(i).at(j) != 0) {
+						vecs.push_back(get_vec(j));
+						break;
+					}
+				}
+			}
+
+			*this = matrix(vecs);
+		}		
+
+		//converts *this into basis for null space of *this
+		void null_space() {
+			matrix temp = *this;
+			temp.rref();
+			vector<matrix> vecs = {};
+
+			for(int i = 0; i < m; i++) {
+				for(int j = 0; j < n; j++) {
+					if(temp.mat.at(i).at(j) != 0) {
+						temp.row_swap(i, j);
+						break;
+					}
+				}
+			}
+			if(temp.m > temp.n) {
+				for(int i = m; i > n; i--) {
+					temp.mat.pop_back();
+					temp.m--;
+				}
+			}
+			else if(temp.n > temp.m) {
+				vector<double> zeroes (temp.n, 0);
+				for(int i = m; i < n; i++) {
+					temp.mat.push_back(zeroes);
+					temp.m++;
+				}
+			}
+			for(int i = 0; i < temp.m; i++) {
+				if(temp.mat.at(i).at(i) == 0) {
+					matrix vec = temp.get_vec(i);
+					vec.mat_scale(-1);
+					vec.mat.at(i).at(0) = 1;
+					vecs.push_back(vec);
+				}
+			}
+
+			*this = matrix(vecs);
+		}
 
 		//converts *this to matrix with orthogonal columns using gram-schmidt process
 		void gram_schmidt() {
@@ -430,60 +505,7 @@ class matrix {
 			q.Q();
 			q.transpose();
 			*this = mat_mult(q, *this);
-		}
-
-		//computes largest eigenvalue using power method
-		double pow_meth(int iters) {
-			matrix x(this->n, 1);
-			x.mat.at(0).at(0) = 1;
-			double mu = 1;
-
-			for(int i = 0; i < iters; i++) {
-				x = mat_mult(*this, x);
-				x.mat_scale(1/mu);
-				mu = 0;
-				for(int i = 0; i < x.m; i++) {
-					if(abs(x.mat.at(i).at(0)) > abs(mu)) {
-						mu = x.mat.at(i).at(0);
-					}
-				}
-			}
-
-			return mu;
-
-		}
-
-		double inv_pow_meth(int iters, double alpha) {
-			matrix x(this->n, 1);
-			x.mat.at(0).at(0) = 1;
-			matrix y = x;
-			double mu = 1;
-			double last = mu;
-
-			for(int i = 0; i < iters; i++) {
-				cout << "    " << 1/mu << " " << alpha << "\n";
-				last = mu;
-				y.mat_scale(1/mu);
-				x = y;
-				matrix id(this->m);
-				id.mat_scale(alpha);
-				matrix temp = mat_sub(*this, id);
-				temp.inverse();
-				y = mat_mult(temp, x);
-				y.print(cout);
-				mu = 0;
-				for(int i = 0; i < y.m; i++) {
-					if(abs(y.mat.at(i).at(0)) > abs(mu)) {
-						mu = y.mat.at(i).at(0);
-					}
-				}
-			}
-
-			if(1/last - 1/mu > 0.0001 || mu == 0) {
-				return numeric_limits<double>::infinity();
-			}
-			return 1/mu + alpha;
-		}
+		}	
 
 		//returns vector containing eigenvalues using the QR process
 		matrix find_evals(int iters) {

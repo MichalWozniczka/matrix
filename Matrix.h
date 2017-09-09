@@ -1,4 +1,4 @@
-
+#include <list>
 #include <limits>
 #include <algorithm>
 #include <iostream>
@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
+#include <functional>
 
 using namespace std;
 
@@ -20,6 +21,7 @@ void matrix_eval(int &op, vector<vector<vector<double>>> &matrices);
 void matrix_print(ofstream &o, vector<vector<vector<double>>> matrices, string ans);
 
 void matrix_solve(ifstream &i, ofstream &o);
+
 
 class matrix {
 	public:
@@ -44,7 +46,14 @@ class matrix {
 			return m3;
 		}
 
+		//returns dot product of two vectors
 		friend double dot_prod(matrix m1, matrix m2) {
+			if(m1.m != m2.m) {
+				throw invalid_argument("Dot product: m1 columns do not match m2 columns.");
+			}
+			if(m1.n != 1 || m2.n != 1) {
+				throw invalid_argument("Dot product: m1 or m2 is not a vector");
+			}
 			matrix temp = m1;
 			temp.transpose();
 			return mat_mult(temp, m2).mat.at(0).at(0);
@@ -86,6 +95,9 @@ class matrix {
 
 		//returns change of coordinates matrix from m1 to m2; P(m2 <- m1)
 		friend matrix change_of_coords(matrix m2, matrix m1) {
+			if(m1.m != m2.m || m1.n != m2.n) {
+				throw invalid_argument("Change of coordinates: m1 dimensions do not match m2 dimensions");
+			}
 			matrix m3(m1.m, m1.n+m2.n);
 			for(int i = 0; i < m1.m; i++) {
 				for(int j = 0; j < m1.n+m2.n; j++) {
@@ -364,6 +376,7 @@ class matrix {
 			*this = temp;
 		}
 
+		//returns vector number vecnum from matrix (index starting at 0)
 		matrix get_vec(int vecnum) {
 			matrix vec(this->m, 1);
 			for(int i = 0; i < this->m; i++) {
@@ -372,44 +385,51 @@ class matrix {
 			return vec;
 		}
 
-		matrix gram_schmidt() {
-			matrix ret(this->m, this->n);
+		double vec_mag() {
+			if(n != 1) {
+				throw invalid_argument("Vector Magnitude: not a vector");
+			}
+			return sqrt(dot_prod(*this, *this));
+		}
+
+			
+
+		//converts *this to matrix with orthogonal columns using gram-schmidt process
+		void gram_schmidt() {
 			matrix x;
 
 			for(int i = 0; i < this->n; i++) {
 				x = get_vec(i);
 				for(int j = 0; j < i; j++) {
-					matrix v = ret.get_vec(j);
+					matrix v = get_vec(j);
 					v.mat_scale(dot_prod(x, v) / dot_prod(v, v));
 					x = mat_sub(x, v);
 				}
 				for(int j = 0; j < this->m; j++) {
-					ret.mat.at(j).at(i) = x.mat.at(j).at(0);
+					mat.at(j).at(i) = x.mat.at(j).at(0);
 				}
 			}
-			return ret;
 		}
 
-		matrix Q() {
-			matrix orthog = gram_schmidt();
+		//converts *this to orthogonal matrix (orthonormal columns) such that A = QR
+		void Q() {
+			gram_schmidt();
 			double scale;
 
-			for(int i = 0; i < orthog.n; i++) {
-				scale = 0;
-				for(int j = 0; j < orthog.m; j++) {
-					scale += pow(orthog.mat.at(j).at(i), 2);
-				}
-				for(int j = 0; j < orthog.m; j++) {
-					orthog.mat.at(j).at(i) = orthog.mat.at(j).at(i) / sqrt(scale);
+			for(int i = 0; i < this->n; i++) {
+				scale = get_vec(i).vec_mag();
+				for(int j = 0; j < this->m; j++) {
+					mat.at(j).at(i) /= scale;
 				}
 			}
-			return orthog;
 		}
 
-		matrix R() {
-			matrix q = Q();
+		//converts *this to upper triangular matrix such that A = QR
+		void R() {
+			matrix q = *this;
+			q.Q();
 			q.transpose();
-			return mat_mult(q, *this);
+			*this = mat_mult(q, *this);
 		}
 
 		//computes largest eigenvalue using power method
@@ -465,14 +485,21 @@ class matrix {
 			return 1/mu + alpha;
 		}
 
+		//returns vector containing eigenvalues using the QR process
 		matrix find_evals(int iters) {
-			matrix q, r;
+			matrix q, r, a;
+			a = *this;
 			for(int i = 0; i < iters; i++) {
-				q = Q();
-				r = R();
-				*this = mat_mult(r, q);
+				q = r = a;
+				q.Q();
+				r.R();
+				a = mat_mult(r, q);
 			}
-			return *this;
+			matrix ret(a.m, 1);
+			for(int i = 0; i < a.m; i++) {
+				ret.mat.at(i).at(0) = a.mat.at(i).at(i);
+			}
+			return ret;
 		}
 
 
@@ -480,22 +507,17 @@ class matrix {
 		void mat_round(int p) {
 			for(int i = 0; i < m; i++) {
 				for(int j = 0; j < n; j++) {
-/*					stringstream ss;
-					ss << fixed;
-					ss.precision(p);
-					ss << mat.at(i).at(j);
-					ss >> mat.at(i).at(j);
+					mat.at(i).at(j) = round(mat.at(i).at(j) * pow(10, p)) / pow(10, p);
 					if(mat.at(i).at(j) == 0) {
 						mat.at(i).at(j) = 0;
-					}*/
-					mat.at(i).at(j) = round(mat.at(i).at(j) * pow(10, p)) / pow(10, p);
+					}
 				}
 			}
 		}
 
-		//outputs *this into o
-		void print(ostream& o) {
-			mat_round(3);
+		//outputs *this into o and rounds all numbers to d decimal places
+		void print(ostream& o, int d) {
+			mat_round(d);
 
 			for(int i = 0; i < m; i++) {
 				for(int j = 0; j < n; j++) {
@@ -507,6 +529,11 @@ class matrix {
 				}
 				o << "\n";
 			}
+		}
+
+		//outputs *this into o and rounds all numbers to 5 decimal places
+		void print(ostream& o) {
+			print(o, 5);
 		}
 };
 

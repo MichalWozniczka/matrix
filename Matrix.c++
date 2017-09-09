@@ -6,6 +6,7 @@
 #include <string>
 #include <algorithm>
 #include <cassert>
+#include <functional>
 
 #include "Matrix.h"
 
@@ -57,7 +58,7 @@ bool is_letter(string s) {
 
 string matrix_eval(string &op, vector<matrix> &matrices) {
 	list<string> bin_functs = {"*", "+", "-", "^", "<-", "."};
-	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval", "gram", "q", "r"};
+	list<string> un_functs = {"u", "l", "ref", "rref", "det", "eval", "gram", "q", "r", "||"};
 	list<string> expr;
 
 	istringstream s(op);
@@ -69,6 +70,8 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 	i = expr.begin();
 	while(expr.begin() != prev(expr.end())) {
 		string oper, arg1, arg2;
+		matrix temp;
+		bool var = 1;
 		if(find(bin_functs.begin(), bin_functs.end(), *i) != bin_functs.end()) {
 			oper = *i;
 			i--;
@@ -79,49 +82,37 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 			arg1 = *i;
 
 			if(oper == "*" && is_letter(arg1) && is_letter(arg2)) {
-				matrix temp = mat_mult(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
+				temp = mat_mult(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
 			}
-			if(oper == "+" && is_letter(arg1) && is_letter(arg2)) {
-				matrix temp = mat_add(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
+			else if(oper == "+" && is_letter(arg1) && is_letter(arg2)) {
+				temp = mat_add(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
 			}
-			if(oper == "-" && is_letter(arg1) && is_letter(arg2)) {
-				matrix temp = mat_sub(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
+			else if(oper == "-" && is_letter(arg1) && is_letter(arg2)) {
+				temp = mat_sub(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
 			}
-			if(oper == "^" && is_letter(arg1) && arg2 == "t") {
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
+			else if(oper == "^" && is_letter(arg1) && arg2 == "t") {
+				temp = matrices.at(arg1.c_str()[0]-65);
 				temp.transpose();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
 			}
-			if(oper == "^" && is_letter(arg1) && arg2 == "-1") {
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
+			else if(oper == "^" && is_letter(arg1) && arg2 == "-1") {
+				temp = matrices.at(arg1.c_str()[0]-65);
 				temp.inverse();
+			}
+			else if(oper == "<-" && is_letter(arg1) && is_letter(arg2)) {
+				temp = change_of_coords(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
+			}
+			else if(oper == "." && is_letter(arg1) && is_letter(arg2)) {
+				var = 0;
+				ostringstream s;
+				s << dot_prod(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
+				string new_arg = s.str();
+				*i = new_arg;
+			}
+			if(var) {
 				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
-				matrices.push_back(temp);
 			}
-			if(oper == "<-" && is_letter(arg1) && is_letter(arg2)) {
-				matrix temp = change_of_coords(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
-			}
-			if(oper == "." && is_letter(arg1) && is_letter(arg2)) {
-				matrix temp = dot_prod(matrices.at(arg1.c_str()[0]-65), matrices.at(arg2.c_str()[0]-65));
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
-			}
+			matrices.push_back(temp);
 		}
 		else if(find(un_functs.begin(), un_functs.end(), *i) != un_functs.end()) {
 			oper = *i;
@@ -130,71 +121,56 @@ string matrix_eval(string &op, vector<matrix> &matrices) {
 			arg1 = *i;
 
 			if(oper == "u" && is_letter(arg1)) {
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp = matrices.at(arg1.c_str()[0]-65);
 				temp.u();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
 			}
 			else if(oper == "l" && is_letter(arg1)) {
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp = matrices.at(arg1.c_str()[0]-65);
 				temp.l();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
 			}
 			else if(oper == "ref" && is_letter(arg1)) {
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp = matrices.at(arg1.c_str()[0]-65);
 				temp.ref();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
 			}
 			else if(oper == "rref" && is_letter(arg1)) {
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
+				temp = matrices.at(arg1.c_str()[0]-65);
 				temp.rref();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(temp);
 			}
 			else if(oper == "det" && is_letter(arg1)) {
+				var = 0;
 				ostringstream s;
 				s << matrices.at(arg1.c_str()[0]-65).det();
 				string new_arg = s.str();
 				*i = new_arg;
 			}
 			else if(oper == "eval" && is_letter(arg1)) {
-				ostringstream s;
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
-				matrix ret = temp.find_evals(100);
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(ret);
+				temp = matrices.at(arg1.c_str()[0]-65);
+				temp.find_evals(100);
 			}
 			else if(oper == "gram" && is_letter(arg1)) {
-				ostringstream s;
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
-				matrix ret = temp.gram_schmidt();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(ret);
+				temp = matrices.at(arg1.c_str()[0]-65);
+				temp.gram_schmidt();
 			}
 			else if(oper == "q" && is_letter(arg1)) {
-				ostringstream s;
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
-				matrix ret = temp.Q();
-				string new_arg(1, matrices.size()+65);
-				*i = new_arg;
-				matrices.push_back(ret);
+				temp = matrices.at(arg1.c_str()[0]-65);
+				temp.Q();
 			}
 			else if(oper == "r" && is_letter(arg1)) {
+				temp = matrices.at(arg1.c_str()[0]-65);
+				temp.R();
+			}
+			else if(oper == "||" && is_letter(arg1)) {
+				var = 0;
 				ostringstream s;
-				matrix temp = matrices.at(arg1.c_str()[0]-65);
-				matrix ret = temp.R();
+				s << matrices.at(arg1.c_str()[0]-65).vec_mag();
+				string new_arg = s.str();
+				*i = new_arg;
+			}
+			if(var) {
 				string new_arg(1, matrices.size()+65);
 				*i = new_arg;
-				matrices.push_back(ret);
 			}
+			matrices.push_back(temp);
 		}
 		i++;
 	}
